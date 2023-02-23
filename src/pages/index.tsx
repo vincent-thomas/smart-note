@@ -1,36 +1,35 @@
 import { type NextPage } from "next";
-import Head from "next/head";
-import Link from "next/link";
-import { signIn, signOut, useSession } from "next-auth/react";
-
 import { api } from "@/utils/api";
+import Link from "next/link";
 
 const Home: NextPage = () => {
-  return <></>;
+  const { mutateAsync } = api.doc.createDoc.useMutation();
+  const { data, refetch } = api.doc.getDocs.useQuery();
+
+  return (
+    <>
+      <button
+        onClick={() => {
+          mutateAsync({
+            title: "testing",
+          })
+            .then(async () => {
+              await refetch();
+            })
+            .catch(console.error);
+        }}
+      >
+        button
+      </button>
+      <div>
+        {data?.map((v, i) => (
+          <Link href={`/d/${v.id}`} key={i}>
+            {v?.title}
+          </Link>
+        ))}
+      </div>
+    </>
+  );
 };
 
 export default Home;
-
-const AuthShowcase: React.FC = () => {
-  const { data: sessionData } = useSession();
-
-  const { data: secretMessage } = api.example.getSecretMessage.useQuery(
-    undefined, // no input
-    { enabled: sessionData?.user !== undefined }
-  );
-
-  return (
-    <div className="flex flex-col items-center justify-center gap-4">
-      <p className="text-center text-2xl text-white">
-        {sessionData && <span>Logged in as {sessionData.user?.name}</span>}
-        {secretMessage && <span> - {secretMessage}</span>}
-      </p>
-      <button
-        className="rounded-full bg-white/10 px-10 py-3 font-semibold text-white no-underline transition hover:bg-white/20"
-        onClick={sessionData ? () => void signOut() : () => void signIn()}
-      >
-        {sessionData ? "Sign out" : "Sign in"}
-      </button>
-    </div>
-  );
-};

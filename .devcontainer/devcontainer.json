@@ -3,25 +3,24 @@
 {
   "name": "Node.js & TypeScript",
   // Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-  "image": "mcr.microsoft.com/devcontainers/typescript-node:0-18",
-  "features": {
-    "ghcr.io/devcontainers-contrib/features/pnpm:2": {}
-  },
-  // Features to add to the dev container. More info: https://containers.dev/features.
+  // "image": "mcr.microsoft.com/devcontainers/typescript-node:0-18",
+  "dockerComposeFile": "docker-compose.yml",
+  "workspaceFolder": "/workspaces/smart-note",
+  "service": "development",
+  "runServices": ["mysql_db"],
 
   // Use 'forwardPorts' to make a list of ports inside the container available locally.
-  // "forwardPorts": [],
-
-  // Use 'postCreateCommand' to run commands after the container is created.
+  "forwardPorts": [3000, 3306],
   "postCreateCommand": "pnpm install",
-
+  // Use 'postCreateCommand' to run commands after the container is created.
   // Configure tool-specific properties.
   "customizations": {
     "vscode": {
       "extensions": [
         "bradlc.vscode-tailwindcss",
         "esbenp.prettier-vscode",
-        "ms-vscode-remote.remote-containers"
+        "Prisma.prisma",
+        "dbaeumer.vscode-eslint"
       ]
     }
   },
