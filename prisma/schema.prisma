@@ -5,6 +5,8 @@ generator client {
 datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
+  relationMode = "prisma"
+
 }
 
 enum DocBlockType {
@@ -17,7 +19,7 @@ enum DocBlockType {
 model Doc {
   id    String @id @default(cuid())
   title String
-  DocBlocks DocBlock[]
+  blocks DocBlock[]
 }
 
 model DocBlock {
@@ -25,7 +27,8 @@ model DocBlock {
   docId String
   Doc   Doc    @relation(fields: [docId], references: [id])
   type  DocBlockType
-  data  Bytes?
+  index Int
+  data  Json
 }
 
 

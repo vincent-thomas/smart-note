@@ -1,27 +1,52 @@
 import { z } from "zod";
-
 import {
   createTRPCRouter,
   publicProcedure,
   protectedProcedure,
 } from "@/server/api/trpc";
+import { DocBlockType } from "@prisma/client";
+import { IDocBlock } from "@/types/docblock";
 
 export const blockRouter = createTRPCRouter({
   createBlock: publicProcedure
-    .input(z.object({ type: z.string().optional(), docId: z.string() }))
-    .mutation(async ({ input: { type, docId }, ctx: { prisma } }) => {
-      const data = await prisma.docBlock.create({
-        data: {
-          type: type || "text",
-          Doc: {
-            connect: {
-              id: docId,
+    .input(
+      z.object({
+        type: z.nativeEnum(DocBlockType),
+        docId: z.string(),
+        id: z.string().cuid().optional(),
+        index: z.number().optional(),
+      })
+    )
+    .mutation(({ input: { type, docId, id, index }, ctx: { prisma } }) =>
+      prisma.$transaction(async (tx) => {
+        const result = await tx.docBlock.findMany({
+          where: {
+            docId,
+          },
+          orderBy: {
+            index: "desc",
+          },
+          take: 1,
+        });
+
+        const doc = result?.[0];
+        const ifNotIndex = doc === undefined ? 0 : doc?.index + 1;
+
+        return prisma.docBlock.create({
+          data: {
+            id,
+            type,
+            data: { content: "test" },
+            index: index || ifNotIndex,
+            Doc: {
+              connect: {
+                id: docId,
+              },
             },
           },
-        },
-      });
-      return data;
-    }),
+        });
+      })
+    ),
 
   getBlocks: publicProcedure
     .input(
@@ -30,33 +55,67 @@ export const blockRouter = createTRPCRouter({
       })
     )
     .query(async ({ ctx: { prisma }, input: { docId } }) => {
-      const result = await prisma.docBlock.findMany({
+      return await prisma.docBlock.findMany({
         where: {
           docId,
         },
       });
-      console.log(result);
 
-      return result;
+      // const data = result.map((v) => ({
+      //   ...v,
+      //   data: JSON.parse(v.data.toString()),
+      // }));
+      // console.log(data);
     }),
-
-  changeTitle: publicProcedure
+    getBlock: publicProcedure
     .input(
       z.object({
-        docId: z.string(),
-        title: z.string(),
+        blockId: z.string(),
       })
     )
-    .mutation(async ({ ctx: { prisma }, input: { title, docId } }) => {
-      const result = await prisma.doc.update({
+    .query(async ({ ctx: { prisma }, input: { blockId } }) => {
+      return await prisma.docBlock.findUnique({
         where: {
-          id: docId,
-        },
-        data: {
-          title,
+          id: blockId,
         },
       });
-      console.log(result);
+
+      // const data = result.map((v) => ({
+      //   ...v,
+      //   data: JSON.parse(v.data.toString()),
+      // }));
+      // console.log(data);
+    }),
+
+  mutateBlock: publicProcedure
+    .input(
+      z.object({
+        id: z.string().cuid(),
+        type: z.nativeEnum(DocBlockType).optional(),
+        index: z.number().optional(),
+        data: z.object({
+          content: z.string().optional(),
+          tags: z.array(z.string()).optional(),
+        }),
+      })
+    )
+    .mutation(async ({ ctx: { prisma }, input: { id, type, data, index } }) => {
+      const result = await prisma.docBlock.update({
+        where: {
+          id,
+        },
+        data: {
+          index,
+          type,
+          data: {
+            content: data.content,
+          },
+        },
+      });
+      // const out = {
+      //   ...result,
+      //   data: fromBuffer(result.data),
+      // };
 
       return result;
     }),
